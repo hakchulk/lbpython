@@ -1,9 +1,43 @@
-# Created by venv; see https://docs.python.org/3/library/venv.html
-Include
-Lib
-Scripts
-share
+# --- Python & Virtual Environments ---
+#에 포함된 가상환경 및 캐시 폴더 제외
+venv/
+.venv/
+env/
+Include/
+Lib/
+Scripts/
 pyvenv.cfg
-venv
+__pycache__/
+*.py[cod]
+*$py.class
+
+# --- Environment Variables & Secrets ---
+#에 노출된 설정 파일 제외
 .env
-data
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# --- Node.js / Frontend (Vite, React) ---
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# --- IDEs & Editors ---
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+
+# --- OS Files ---
+.DS_Store
+Thumbs.db
+
+# --- Project Specific ---
+# 점검보고서 등 개인 문서를 제외하고 싶다면 추가
+# 점검보고서.md
