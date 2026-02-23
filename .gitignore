@@ -41,3 +41,7 @@ Thumbs.db
 # --- Project Specific ---
 # 점검보고서 등 개인 문서를 제외하고 싶다면 추가
 # 점검보고서.md
+
+.env
+__pycache__/
+*.pyc
