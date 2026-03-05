@@ -15,7 +15,7 @@ class DietAnalysisResponse(BaseModel):
     calories: int = Field(..., description="예상 총 칼로리 (kcal)")
     items: List[FoodItem] = Field(..., description="사진에서 포착된 개별 음식 리스트")
     nutrients: NutrientInfo = Field(..., description="상세 영양 성분")
-    health_tip: str = Field(..., description="식단에 대한 평가")
+    evaluation: str = Field(..., description="식단에 대한 평가")
     status: Literal["SUCCESS", "PARTIAL_SUCCESS", "NO_FOOD_DETECTED", "INVALID_IMAGE", "ERROR"] = Field(
         default="SUCCESS", 
         description="분석 상태 (성공, 부분성공, 음식없음, 이미지오류, 서버오류)"

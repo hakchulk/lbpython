@@ -10,6 +10,7 @@ pyvenv.cfg
 __pycache__/
 *.py[cod]
 *$py.class
+data/vectorstore/
 
 # --- Environment Variables & Secrets ---
 #에 노출된 설정 파일 제외
