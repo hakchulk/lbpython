@@ -5,6 +5,8 @@ class NutrientInfo(BaseModel):
     carbohydrates: float = Field(..., description="탄수화물 (g)")
     protein: float = Field(..., description="단백질 (g)")
     fat: float = Field(..., description="지방 (g)")
+
+
 class FoodItem(BaseModel):
     name: str = Field(..., description="음식 명칭 (예: 닭가슴살, 흰쌀밥)")
     weight_gram: int = Field(..., description="예상 무게 (g)")
