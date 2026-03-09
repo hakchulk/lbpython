@@ -44,5 +44,4 @@ Thumbs.db
 # 점검보고서.md
 
 .env
-__pycache__/
 *.pyc
