@@ -1,0 +1,23 @@
+from fastapi import APIRouter
+from pydantic import BaseModel
+from app.api.v1.chatbot.chatlangchain import answer_query
+
+router = APIRouter(prefix="/chatbot", tags=["chatbot"])
+
+class ChatRequest(BaseModel):
+    question: str
+    name: str
+    point: int
+
+class ChatResponse(BaseModel):
+    question: str
+    answer: str
+
+@router.post("/", response_model=ChatResponse)
+def chat_endpoint(req: ChatRequest):
+    try:
+        answer = answer_query(req.question, req.name, req.point)
+        return {"question": req.question, "answer": answer or "죄송합니다. 답변을 생성하지 못했습니다."}
+    except Exception as e:
+        print("챗봇 처리 오류:", e)
+        return {"question": req.question, "answer": "서버 오류가 발생했습니다."}
