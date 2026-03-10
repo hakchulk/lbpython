@@ -1,4 +1,4 @@
-name: CI/CD - Build and Deploy
+﻿name: CI/CD - Build and Deploy
 
 on:
   push:
@@ -11,7 +11,6 @@ env:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -34,25 +33,45 @@ jobs:
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest
 
+  deploy-to-server:
+    runs-on: ubuntu-latest
+    needs: build-and-deploy # 빌드가 성공해야 배포 시작
+    steps:
       - name: Deploy to Server via SSH
         uses: appleboy/ssh-action@v1.0.3
         env:
           ENV_FILE_CONTENT: ${{ secrets.ENV_FILE_CONTENT }}
+          # script 내부에서 사용할 수 있도록 IMAGE_NAME을 env로 정의
+          IMAGE_NAME: ${{ env.IMAGE_NAME }}
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_KEY }}
           port: 22
+          # script 내부로 넘겨줄 환경 변수들 명시
+          envs: ENV_FILE_CONTENT,IMAGE_NAME
           script: |
-            mkdir -p /opt/lbpython
-            printf '%s' "$ENV_FILE_CONTENT" > /opt/lbpython/.env
-            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest
-            if [ "$(docker ps -q -f name=${{ env.IMAGE_NAME }})" != "" ]; then
-              docker stop ${{ env.IMAGE_NAME }}
-              docker rm ${{ env.IMAGE_NAME }}
+            # 1. 환경 설정 파일 저장
+            mkdir -p ~/lbpython
+            printf '%s' "$ENV_FILE_CONTENT" > ~/lbpython/.env
+
+            # 2. 최신 이미지 풀
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/$IMAGE_NAME:latest
+
+            # 3. 기존 컨테이너가 있으면 중지 및 삭제 (8000 포트 점유 해제)
+            if [ "$(docker ps -aq -f name=$IMAGE_NAME)" != "" ]; then
+              echo "Stopping and removing existing container..."
+              docker stop $IMAGE_NAME || true
+              docker rm $IMAGE_NAME || true
             fi
+
+            # 4. 새 컨테이너 실행
             docker run -d \
-              --name ${{ env.IMAGE_NAME }} \
+              --name $IMAGE_NAME \
               -p 8000:8000 \
-              --env-file /opt/lbpython/.env \
-              ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest
+              --restart always \
+              --env-file ~/lbpython/.env \
+              ${{ secrets.DOCKERHUB_USERNAME }}/$IMAGE_NAME:latest
+
+            # 5. 사용하지 않는 오래된 이미지 정리
+            docker image prune -f
