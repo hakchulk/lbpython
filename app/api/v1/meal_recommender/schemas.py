@@ -70,10 +70,20 @@ class MealRecommendRequest(BaseModel):
     )
 
 
+class IngredientPortion(BaseModel):
+    """재료별 1인분 권장 섭취량(g)."""
+
+    name: str = Field(..., description="재료명 (예: 닭가슴살, 현미)")
+    grams: int = Field(..., description="1인분 기준 권장 그람수 (g)")
+
+
 class RecommendedMenuItem(BaseModel):
     name: str = Field(..., description="추천 메뉴 이름")
     description: str = Field(..., description="메뉴에 대한 간단한 설명")
-    ingredients: List[str] = Field(..., description="주요 재료 목록")
+    ingredients: List[IngredientPortion] = Field(
+        ...,
+        description="주요 재료 목록 (재료명 + 1인분 기준 권장 그람수)",
+    )
     calories: int = Field(..., description="예상 칼로리 (kcal)")
     nutrients: NutrientInfo = Field(..., description="해당 메뉴의 주요 영양 성분")
 
@@ -90,4 +100,40 @@ class DailyMealRecommendation(BaseModel):
         default_factory=list,
         description="알러지, 질환(혈당/콜레스테롤 등)에 따른 주의사항 및 보완 팁",
     )
+
+
+# --- 음식 이름 + 양 기준 칼로리 계산 ---
+
+
+class FoodEntryForCalories(BaseModel):
+    """칼로리 계산 요청용: 음식 이름 + 섭취량(g)."""
+
+    name: str = Field(..., description="음식 이름 (예: 닭가슴살, 현미밥)")
+    amount_grams: int = Field(..., ge=1, description="섭취량 (g)")
+
+
+class CaloriesCalculationRequest(BaseModel):
+    """유저가 작성한 식단(이름 + 량) 목록."""
+
+    items: List[FoodEntryForCalories] = Field(
+        ...,
+        min_length=1,
+        description="음식별 이름과 그람수 목록",
+    )
+
+
+class FoodEntryCaloriesResult(BaseModel):
+    """항목별 추정 칼로리·영양소."""
+
+    name: str = Field(..., description="음식 이름")
+    amount_grams: int = Field(..., description="섭취량 (g)")
+    estimated_calories: int = Field(..., description="추정 칼로리 (kcal)")
+    nutrients: NutrientInfo = Field(..., description="추정 영양소 (탄수화물/단백질/지방 g)")
+
+
+class CaloriesCalculationResponse(BaseModel):
+    """이름+량 기준 칼로리 계산 결과."""
+
+    items: List[FoodEntryCaloriesResult] = Field(..., description="항목별 추정 칼로리·영양소")
+    total_calories: int = Field(..., description="총 추정 칼로리 (kcal)")
 
