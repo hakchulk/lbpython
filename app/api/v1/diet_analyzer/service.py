@@ -1,12 +1,8 @@
 import io
-import os
 import base64
-from openai import AsyncOpenAI
-from pydantic import ValidationError
-from dotenv import load_dotenv
 from PIL import Image
+
 from .schemas import DietAnalysisResponse
-from app.core.config import settings  # 설정 모듈 임포트
 from app.core.ai_utils import generate  # 범용 유틸리티 임포트
 
 def process_and_encode_image(image_bytes: bytes) -> str:
