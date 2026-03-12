@@ -18,6 +18,7 @@ DEFAULT_SOURCE_PATHS = [
     "Healthy_diet_2026.txt",
     "근거기반 체중감량 운동.txt",
     "Effect_of_Diet_and_Exercise.txt",
+    "사이트_메뉴얼.md",  # 프로젝트 Frontend 사이트 메뉴얼 (data/ 에 저장)
 ]
 
 
@@ -30,7 +31,7 @@ def resolve_data_path(path: str, default_dir: str = "data") -> str:
 
 
 def extract_text_from_file(file_path: str) -> str:
-    """단일 파일(PDF/TXT)에서 텍스트 추출."""
+    """단일 파일(PDF/TXT/MD)에서 텍스트 추출."""
     file_path = resolve_data_path(file_path)
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"파일을 찾을 수 없습니다: {file_path}")
@@ -41,7 +42,7 @@ def extract_text_from_file(file_path: str) -> str:
         loader = PyPDFLoader(file_path)
         documents = loader.load()
         return "\n".join(doc.page_content for doc in documents)
-    if file_extension == ".txt":
+    if file_extension in (".txt", ".md"):
         loader = TextLoader(file_path, encoding="utf-8")
         documents = loader.load()
         return "\n".join(doc.page_content for doc in documents)
@@ -171,15 +172,8 @@ def get_knowledge_base(
         return None
 
 
-# 모듈 로드 시점에는 빌드하지 않고, 첫 답변 시 lazy 로드
-_knowledge_base: FAISS | None = None
-
-
-def _get_or_build_knowledge_base() -> FAISS | None:
-    global _knowledge_base
-    if _knowledge_base is None:
-        _knowledge_base = get_knowledge_base()
-    return _knowledge_base
+# 모듈 로드 시점에 벡터 스토어 구축
+_knowledge_base: FAISS | None = get_knowledge_base()
 
 
 def answer_query_with_rag(
@@ -236,7 +230,7 @@ def answer_query_with_rag(
         "문서의 라이선스, 법적인 내용은 제외하고 답변.\n"
         "질문 내용 중 사용자의 정보를 참조할 필요가 없을 때는 사용자 정보를 언급하지 마십시오.\n"
         "질문 내용 중 사용자의 정보를 참조해야한 하는 항목이 있으면 그 정보만 간략히 자연스런 문장으로 보여주며 대화를 시작하십시오.\n"
-        "답변 범위는 '건강', '식단', '운동' 등 문서의 내용과 관련 질문에만 전문적으로 답변하십시오.\n"
+        "답변 범위는 '사이트 메뉴얼', '건강', '식단', '운동' 등 문서의 내용과 관련 질문에만 전문적으로 답변하십시오.\n"
         "그 외의 주제(정치, 경제, 일반 상식 등)에 대해서는 '건강 관리와 관련된 질문에만 답변을 드릴 수 있습니다'라고 정중히 거절하십시오.\n"
         "식단 추천 질문이 있을 시 사용자의 [알레르기 정보]를 확인하여 해당 재료가 포함된 메뉴는 절대 제외하십시오.\n"
         "모든 답변은 한국어로 친절하고 신뢰감 있는 전문가 어조로 작성하십시오.\n"
@@ -266,16 +260,16 @@ def answer_query_with_rag(
 
 def answer_query(question: str, user_info: str = "") -> str:
     """
-    챗봇 답변. 논문/문서로 훈련된 벡터 스토어가 있으면 RAG로 답하고, 없으면 일반 프롬프트로 답합니다.
+    챗봇 답변. 논문/문서로 훈련된 벡터 스토어가 있으면 RAG로 답하고, 없으면 안내 메시지를 반환합니다.
     """
     try:
-        kb = _get_or_build_knowledge_base()
+        if _knowledge_base is None:
+            return "문서를 불러올 수 없어 답변을 생성할 수 없습니다. 관리자에게 문의해 주세요."
         resolved_paths = [resolve_data_path(p) for p in DEFAULT_SOURCE_PATHS]
         info_line = f"사용자 정보(참고): {user_info}"
         return answer_query_with_rag(
-                kb, question, source_paths=resolved_paths, user_info=info_line
-            )
-
+            _knowledge_base, question, source_paths=resolved_paths, user_info=info_line
+        )
     except Exception as e:
         logger.exception("AI 응답 오류: %s", e)
         return "서버 오류가 발생했습니다."
